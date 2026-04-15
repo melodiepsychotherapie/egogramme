@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Égogramme — Analyse Transactionnelle | Cabinet Mélodie Psychothérapie</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;600&display=swap');
+  :root {
+    --dominant: #C47E1A; --vivant: #D9931F; --tonClair: #F2C472;
+    --sauge: #8FA88A; --orChaud: #C8A96E;
+    --creme: #FDF4E3; --sable: #EDE0C8; --brume: #F5F0E8;
+    --blancC: #FDFCF8; --nuit: #2C2010; --gris: #6B6560;
+    --blanc: #FFFFFF; --saugeCl: #D8E8DA; --bleuCl: #E6F1FB;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Source Sans 3', sans-serif; background: var(--brume); color: var(--nuit); }
+
+  /* BANDEAU */
+  .banner { background: linear-gradient(135deg, var(--dominant), #9e5e0c); padding: 36px 40px 28px; text-align: center; }
+  .banner .label { font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--tonClair); margin-bottom: 8px; }
+  .banner h1 { font-family: 'Lora', serif; font-size: 2.1rem; font-weight: 700; color: var(--blanc); margin-bottom: 6px; }
+  .banner .sub { font-family: 'Lora', serif; font-size: 1rem; font-style: italic; color: var(--tonClair); }
+
+  /* PROGRESSION */
+  .prog-wrap { background: var(--dominant); padding: 12px 32px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.15); }
+  .prog-label { font-size: 13px; color: var(--tonClair); white-space: nowrap; min-width: 110px; }
+  .prog-bg { flex: 1; height: 8px; background: rgba(255,255,255,.2); border-radius: 4px; overflow: hidden; }
+  .prog-fill { height: 100%; background: var(--tonClair); border-radius: 4px; transition: width .4s; width: 0%; }
+  .prog-pct { font-size: 12px; color: var(--blanc); min-width: 40px; text-align: right; }
+
+  /* CONTENEUR */
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 60px; }
+
+  /* COMPOSANTS */
+  .infobox { background: var(--creme); border-left: 4px solid var(--vivant); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0 18px; font-size: .92rem; line-height: 1.65; }
+  .callout { background: var(--sable); border-left: 4px solid var(--orChaud); border-radius: 0 8px 8px 0; padding: 13px 18px; font-size: .89rem; font-style: italic; color: var(--dominant); line-height: 1.55; margin: 16px 0; }
+  .sec-bar { display: flex; border-radius: 6px; overflow: hidden; margin: 28px 0 14px; }
+  .sec-bar .num { background: var(--dominant); color: var(--blanc); font-family: 'Lora', serif; font-weight: 700; padding: 10px 18px; display: flex; align-items: center; font-size: .95rem; }
+  .sec-bar .ttl { background: var(--vivant); color: var(--blanc); font-family: 'Lora', serif; font-weight: 700; font-size: .93rem; padding: 10px 20px; flex: 1; display: flex; align-items: center; }
+  .sauge-block { background: var(--sauge); border-radius: 8px; padding: 18px 22px; margin: 22px 0; }
+  .sauge-block h3 { font-family: 'Lora', serif; color: var(--blanc); font-size: .98rem; margin-bottom: 10px; }
+  .sauge-block li { color: var(--blanc); font-size: .87rem; margin-left: 20px; margin-bottom: 5px; line-height: 1.5; }
+
+  /* TABLEAU QUESTIONS */
+  .q-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,.06); }
+  .q-table thead tr { background: var(--dominant); }
+  .q-table thead th { font-family: 'Lora', serif; font-size: .8rem; font-weight: 700; color: var(--blanc); padding: 9px 10px; text-align: left; }
+  .q-table thead th.c { text-align: center; }
+  .q-table tbody tr:nth-child(odd)  { background: var(--creme); }
+  .q-table tbody tr:nth-child(even) { background: var(--blancC); }
+  .q-table tbody tr.answered { background: #faecd0 !important; }
+  .q-table td { padding: 8px 10px; border-bottom: 1px solid var(--sable); vertical-align: middle; }
+  .q-num { width: 34px; text-align: center; font-size: .78rem; font-weight: 600; color: var(--dominant); }
+  .q-txt { font-size: .86rem; line-height: 1.44; }
+  .q-rd  { width: 76px; text-align: center; }
+
+  /* RADIO */
+  .ro { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; margin: 0 auto; width: fit-content; }
+  .ro input[type="radio"] { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; border: 2px solid var(--orChaud); border-radius: 50%; cursor: pointer; transition: all .2s; position: relative; display: block; }
+  .ro input[type="radio"]:checked { background: var(--vivant); border-color: var(--vivant); box-shadow: 0 0 0 3px rgba(217,147,31,.2); }
+  .ro input[type="radio"]:checked::after { content:''; position: absolute; top:50%; left:50%; transform: translate(-50%,-50%); width:8px; height:8px; background: var(--blanc); border-radius:50%; }
+  .ro span { font-size: 9px; color: var(--gris); text-align: center; line-height: 1.2; }
+
+  /* BOUTON CALCUL */
+  .btn-wrap { text-align: center; margin: 28px 0; }
+  .btn-calc { background: var(--vivant); color: var(--blanc); font-family: 'Lora', serif; font-size: 1.02rem; font-weight: 700; border: none; padding: 13px 40px; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 18px rgba(217,147,31,.35); transition: all .25s; }
+  .btn-calc:hover { background: var(--dominant); transform: translateY(-1px); }
+  .warn { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 16px; border-radius: 0 6px 6px 0; font-size: .86rem; color: #856404; margin-top: 10px; display: none; }
+
+  /* RÉSULTATS */
+  #results { display: none; }
+
+  /* RADAR */
+  .radar-wrap { display: flex; justify-content: center; margin: 16px 0 24px; }
+  .radar-wrap canvas { max-width: 500px; width: 100%; }
+
+  /* CARTES RÉSULTATS */
+  .etat-group { border-radius: 10px; overflow: hidden; margin-bottom: 18px; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+  .etat-group-header { padding: 11px 18px; font-family: 'Lora', serif; font-size: .95rem; font-weight: 700; color: var(--blanc); display: flex; align-items: center; justify-content: space-between; }
+  .etat-total-badge { background: rgba(255,255,255,.22); border-radius: 20px; padding: 2px 12px; font-size: .82rem; font-weight: 600; }
+  .sous-etats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--sable); }
+  @media (max-width:520px) { .sous-etats-grid { grid-template-columns: 1fr; } }
+  .sous-card { background: var(--creme); padding: 14px 16px; }
+  .sous-card.alt { background: var(--blancC); }
+  .sous-label { font-size: .82rem; font-weight: 600; margin-bottom: 6px; }
+  .sous-score-line { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; }
+  .sous-score-num { font-size: 1.4rem; font-weight: 700; font-family: 'Lora', serif; }
+  .sous-score-max { font-size: .75rem; color: var(--gris); }
+  .sous-pct { font-size: .75rem; color: var(--gris); margin-left: auto; }
+  .bar-bg { height: 8px; background: rgba(0,0,0,.08); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(.22,.68,0,1.2); width: 0%; }
+  .sous-desc { font-size: .78rem; color: var(--gris); margin-top: 7px; line-height: 1.4; font-style: italic; }
+  .shared-note { font-size: .72rem; color: var(--orChaud); margin-top: 4px; }
+
+  /* SYNTHÈSE */
+  .synth-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: .87rem; border-radius: 8px; overflow: hidden; }
+  .synth-table th { background: var(--dominant); color: var(--blanc); padding: 9px 14px; font-family: 'Lora', serif; text-align: left; }
+  .synth-table td { padding: 9px 14px; border-bottom: 1px solid var(--sable); }
+  .synth-table tr:nth-child(odd) td  { background: var(--creme); }
+  .synth-table tr:nth-child(even) td { background: var(--blancC); }
+
+  /* RÉFÉRENCE SOUS-ÉTATS */
+  .ref-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: .85rem; border-radius: 8px; overflow: hidden; }
+  .ref-table th { background: var(--dominant); color: var(--blanc); padding: 9px 14px; font-family: 'Lora', serif; text-align: left; }
+  .ref-table td { padding: 9px 14px; border-bottom: 1px solid var(--sable); vertical-align: top; line-height: 1.5; }
+  .ref-table tr:nth-child(odd) td  { background: var(--creme); }
+  .ref-table tr:nth-child(even) td { background: var(--blancC); }
+  .ref-table td:first-child { font-weight: 600; white-space: nowrap; width: 38%; }
+
+  /* ── MODULE ENVOI EMAIL ── */
+  .email-module {
+    background: var(--blanc);
+    border: 2px solid var(--vivant);
+    border-radius: 12px;
+    padding: 28px 30px;
+    margin: 28px 0;
+    box-shadow: 0 4px 20px rgba(217,147,31,.12);
+  }
+  .email-module h3 {
+    font-family: 'Lora', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--dominant);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .email-module h3::before {
+    content: '';
+    display: inline-block;
+    width: 28px; height: 28px;
+    background: var(--vivant);
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E");
+    background-size: 16px;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  .email-module .em-desc {
+    font-size: .88rem;
+    color: var(--gris);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .em-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  @media (max-width: 540px) { .em-fields { grid-template-columns: 1fr; } }
+  .em-field { display: flex; flex-direction: column; gap: 5px; }
+  .em-field label { font-size: .8rem; font-weight: 600; color: var(--dominant); text-transform: uppercase; letter-spacing: .5px; }
+  .em-field input, .em-field textarea {
+    border: 1.5px solid var(--sable);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: .88rem;
+    color: var(--nuit);
+    background: var(--blancC);
+    transition: border-color .2s;
+    outline: none;
+  }
+  .em-field input:focus, .em-field textarea:focus { border-color: var(--vivant); background: var(--creme); }
+  .em-field textarea { resize: vertical; min-height: 80px; }
+  .em-field.full { grid-column: 1 / -1; }
+  .em-privacy {
+    font-size: .77rem;
+    color: var(--gris);
+    background: var(--brume);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .em-privacy strong { color: var(--dominant); }
+  .btn-send {
+    background: var(--sauge);
+    color: var(--blanc);
+    font-family: 'Lora', serif;
+    font-size: .98rem;
+    font-weight: 700;
+    border: none;
+    padding: 13px 36px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all .25s;
+    box-shadow: 0 4px 14px rgba(143,168,138,.35);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 auto;
+  }
+  .btn-send:hover { background: #6a8f6d; transform: translateY(-1px); }
+  .btn-send:disabled { background: var(--gris); cursor: not-allowed; transform: none; box-shadow: none; }
+  .send-warn { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: .84rem; color: #856404; margin-top: 12px; display: none; }
+  .send-success {
+    display: none;
+    background: var(--saugeCl);
+    border-left: 4px solid var(--sauge);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin-top: 14px;
+    font-size: .9rem;
+    color: #2A5030;
+    line-height: 1.6;
+  }
+  .send-success strong { font-family: 'Lora', serif; font-size: 1rem; display: block; margin-bottom: 4px; }
+
+  /* FOOTER */
+  footer { background: var(--dominant); text-align: center; padding: 16px 20px; }
+  footer p { font-size: .77rem; color: var(--tonClair); margin-bottom: 3px; }
+  footer a { color: var(--tonClair); text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- BANDEAU -->
+<div class="banner">
+  <div class="label">Document psychoéducatif — Développement personnel</div>
+  <h1>Égogramme</h1>
+  <div class="sub">Analyse Transactionnelle — Évaluer vos états du Moi et sous-états</div>
+</div>
+
+<!-- BARRE DE PROGRESSION -->
+<div class="prog-wrap">
+  <span class="prog-label" id="prog-label">0 / 71 réponses</span>
+  <div class="prog-bg"><div class="prog-fill" id="prog-fill"></div></div>
+  <span class="prog-pct" id="prog-pct">0 %</span>
+</div>
+
+<div class="wrap">
+
+  <div class="infobox">
+    <strong>Version détaillée — 12 sous-états.</strong> Cet égogramme distingue les aspects positifs et négatifs de chaque état du Moi (Parent, Adulte, Enfant) ainsi que leurs sous-états fonctionnels. Les résultats sont calculés automatiquement et peuvent ensuite être envoyés directement à votre thérapeute.
+  </div>
+  <div class="callout">💡 Pour chaque affirmation, choisissez <strong>Plutôt Vrai</strong> ou <strong>Plutôt Faux</strong>. Répondez spontanément — il n'y a pas de bonne ou mauvaise réponse. Les questions 33 et 64 comptent dans deux sous-états différents.</div>
+
+  <!-- SECTION 1 : QUESTIONNAIRE -->
+  <div class="sec-bar"><span class="num">1</span><span class="ttl">Questionnaire — 71 affirmations</span></div>
+
+  <table class="q-table">
+    <thead><tr>
+      <th class="q-num">N°</th>
+      <th>Affirmation</th>
+      <th class="c" style="width:76px">Plutôt<br>Vrai</th>
+      <th class="c" style="width:76px">Plutôt<br>Faux</th>
+    </tr></thead>
+    <tbody id="q-body"></tbody>
+  </table>
+
+  <div class="btn-wrap">
+    <button class="btn-calc" onclick="calculate()">Calculer mon égogramme →</button>
+    <div class="warn" id="warn"></div>
+  </div>
+
+  <!-- RÉSULTATS -->
+  <div id="results">
+
+    <div class="sec-bar"><span class="num">2</span><span class="ttl">Profil — Graphique radar</span></div>
+    <div class="infobox" id="res-intro"></div>
+    <div class="radar-wrap">
+      <canvas id="radar" role="img" aria-label="Graphique radar des 12 sous-états du Moi"></canvas>
+    </div>
+
+    <div class="sec-bar"><span class="num">3</span><span class="ttl">Scores détaillés par sous-état</span></div>
+    <div id="cards-container"></div>
+
+    <div class="sec-bar"><span class="num">4</span><span class="ttl">Synthèse — Totaux par état principal</span></div>
+    <table class="synth-table">
+      <thead><tr><th>État principal</th><th>Sous-états</th><th>Score total</th></tr></thead>
+      <tbody id="synth-body"></tbody>
+    </table>
+
+    <div class="callout" id="interp"></div>
+
+    <!-- SECTION 5 : RÉFÉRENCE SOUS-ÉTATS -->
+    <div class="sec-bar"><span class="num">5</span><span class="ttl">Référence — Les sous-états du Moi</span></div>
+    <table class="ref-table">
+      <thead><tr><th>Sous-état</th><th>Caractéristiques</th></tr></thead>
+      <tbody>
+        <tr><td>Parent Normatif +</td><td>Pose des limites claires et bienveillantes, protège, structure. Permet de dire non avec respect.</td></tr>
+        <tr><td>Parent Normatif −</td><td>Autoritaire, critique, persécuteur. Dévalorise et impose.</td></tr>
+        <tr><td>Parent Nourricier +</td><td>Encourage, soutient, donne la permission. Favorise l'épanouissement.</td></tr>
+        <tr><td>Parent Nourricier −</td><td>Surprotège, fait à la place de l'autre. Risque de sauveur.</td></tr>
+        <tr><td>Adulte +</td><td>Analyse, observe, décide sur la base des faits. Régule les autres états.</td></tr>
+        <tr><td>Adulte −</td><td>Excès de rationalité : déconnexion des émotions.</td></tr>
+        <tr><td>Enfant Libre +</td><td>Spontané, créatif, expressif, enthousiaste.</td></tr>
+        <tr><td>Enfant Libre −</td><td>Impulsif, égocentrique, peu adapté socialement.</td></tr>
+        <tr><td>Enfant Adapté Modèle</td><td>Adaptation saine et autonome aux règles sociales, tact, coopération sincère.</td></tr>
+        <tr><td>Enfant Adapté Soumis</td><td>Recherche l'approbation, manque de confiance en soi, dépendant.</td></tr>
+        <tr><td>Enfant Adapté Rebelle</td><td>S'oppose systématiquement à l'autorité, provoque, remet en cause.</td></tr>
+        <tr><td>Enfant Créateur +</td><td>Intuitif, pensée originale, trouve des solutions nouvelles.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- SECTION 6 : ENVOI À LA THÉRAPEUTE -->
+    <div class="sec-bar"><span class="num">6</span><span class="ttl">Envoyer mes résultats à ma thérapeute</span></div>
+
+    <div class="email-module">
+      <h3>Transmettre mon égogramme</h3>
+      <p class="em-desc">
+        Une fois votre égogramme complété, vous pouvez envoyer vos résultats directement à Mélodie afin qu'elle puisse en prendre connaissance avant votre prochaine séance et préparer une interprétation personnalisée.
+      </p>
+
+      <div class="em-fields">
+        <div class="em-field">
+          <label>Votre prénom *</label>
+          <input type="text" id="em-prenom" placeholder="Votre prénom" autocomplete="given-name">
+        </div>
+        <div class="em-field">
+          <label>Votre nom *</label>
+          <input type="text" id="em-nom" placeholder="Votre nom" autocomplete="family-name">
+        </div>
+        <div class="em-field">
+          <label>Votre e-mail (optionnel)</label>
+          <input type="email" id="em-email" placeholder="Pour recevoir une copie" autocomplete="email">
+        </div>
+        <div class="em-field">
+          <label>Date de la prochaine séance (optionnel)</label>
+          <input type="text" id="em-seance" placeholder="Ex : 20 janvier 2026">
+        </div>
+        <div class="em-field full">
+          <label>Message libre (optionnel)</label>
+          <textarea id="em-message" placeholder="Un ressenti, une question, une observation sur vos résultats…"></textarea>
+        </div>
+      </div>
+
+      <div class="em-privacy">
+        <strong>Confidentialité :</strong> Vos résultats seront transmis uniquement à votre thérapeute à l'adresse <strong>contact@melodiepsychotherapie.fr</strong>. Aucune donnée n'est stockée par ce formulaire.
+      </div>
+
+      <button class="btn-send" id="btn-send" onclick="sendResults()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        Envoyer à ma thérapeute
+      </button>
+      <div class="send-warn" id="send-warn"></div>
+      <div class="send-success" id="send-success">
+        <strong>✓ Votre messagerie s'est ouverte !</strong>
+        Un e-mail pré-rempli avec l'ensemble de vos résultats a été préparé. Vérifiez le contenu puis cliquez sur <em>Envoyer</em> dans votre messagerie. Si la fenêtre ne s'est pas ouverte, copiez l'adresse <strong>contact@melodiepsychotherapie.fr</strong> et envoyez votre résumé manuellement.
+      </div>
+    </div>
+
+    <div class="sauge-block">
+      <h3>✦ Pour aller plus loin en séance</h3>
+      <ul>
+        <li>Ces résultats sont des indicateurs de tendances, non un diagnostic définitif.</li>
+        <li>Aucune interprétation définitive ne doit être faite sans accompagnement professionnel.</li>
+        <li>Cet outil s'inscrit dans le cadre de votre suivi thérapeutique au cabinet.</li>
+      </ul>
+    </div>
+
+  </div><!-- /results -->
+
+</div><!-- /wrap -->
+
+<footer>
+  <p>Cabinet de Psychothérapie · <a href="https://www.melodiepsychotherapie.fr" target="_blank">www.melodiepsychotherapie.fr</a> · <a href="mailto:contact@melodiepsychotherapie.fr">contact@melodiepsychotherapie.fr</a></p>
+  <p>SIRET 948 116 967 00019</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ── DONNÉES ────────────────────────────────────────────────────────────────────
+const AFFIRMATIONS = [
+  "J'ai essayé plusieurs fois d'arrêter de fumer sans y arriver.",
+  "Mes enfants m'appellent le plus souvent par mon prénom.",
+  "Je fais ce qu'il faut pour ne pas passer inaperçu(e) vis-à-vis de mon patron et faire connaître mes bons résultats.",
+  "Certains me trouvent un peu soucieux(se) du « qu'en dira-t-on ».",
+  "J'ai plusieurs plans de carrière. J'ai déjà commencé à en réaliser certains et je compte bien les poursuivre en les adaptant selon les circonstances.",
+  "Je prête facilement mes affaires, sans me préoccuper de savoir si on va me les rendre ou pas.",
+  "Dans les discussions, quand on m'attaque sur mes idées, je peux remettre en cause certains de mes points de vue.",
+  "Mes parents m'ont donné une éducation sévère et dans le respect des principes.",
+  "J'aime le travail bien fait, précis et réalisé dans les délais voulus.",
+  "Je conduis assez vite, dès que j'en ai la possibilité, car j'aime la vitesse.",
+  "On me trouve chaleureux(se) et expressif(ve).",
+  "J'ai du mal à économiser et je vis au-dessus de mes moyens.",
+  "J'arrive à bien coopérer avec mon patron, sans pour autant être complètement d'accord avec lui sur bien des points.",
+  "Dans le travail, les systèmes de valeurs et les sentiments ont plus d'importance que certains ne le croient.",
+  "J'ai de nombreuses activités en dehors du travail ; il me semble que je m'ennuie moins que la plupart des gens.",
+  "Commander me fait peur et je n'aime pas prendre des responsabilités.",
+  "Il est dommage que certaines traditions de politesse et de bienséance se perdent.",
+  "Quand je sais qu'on veut faire pression sur moi, je vois rouge.",
+  "Il m'arrive de faire des signes (appel de phares, klaxon, gestes) aux automobilistes qui ne respectent pas le code de la route.",
+  "En éducation, il est primordial d'avoir des relations de confiance avec ses enfants.",
+  "Il faut changer les choses et lutter pour une société plus juste et plus égalitaire.",
+  "Je n'attends pas grand-chose des hommes politiques et je n'ai pas beaucoup d'illusions sur leur capacité à changer notre société.",
+  "Quoi qu'on en dise, les enfants ont besoin de nous beaucoup plus longtemps qu'il n'y paraît et il faut être prêt.",
+  "Je trouve utile de remettre en cause, de temps à autre, mes conceptions en les mettant à l'épreuve de la réalité et en expérimentant de nouvelles façons de faire.",
+  "Je ne me mets jamais en colère et mon humeur est constante, même si la situation m'énerve.",
+  "Je ne crains pas le silence avec un interlocuteur ou un groupe. Au contraire, cela aide à la réflexion et à la communication.",
+  "Certains me trouvent un peu trop diplomate, mais on est bien obligé si on veut arriver.",
+  "Face à une situation difficile, je suis mon devoir.",
+  "Dans ma vie, j'ai eu des rencontres décisives avec des personnes qui ont eu une grande influence sur moi.",
+  "Il m'arrive encore trop souvent de continuer à suivre certains principes, alors que je doute de plus en plus de leur valeur. J'ai été élevé(e) comme ça.",
+  "J'aime les contacts avec les étrangers et je me sens à l'aise avec des gens différents de moi.",
+  "Mon entourage me trouve un peu froid(e) et distant(e).",
+  "Je manifeste souvent une certaine indépendance d'esprit, qui étonne parfois les gens.",
+  "Je suis plutôt généreux(se). J'aime faire des cadeaux, mais souvent je dépense trop.",
+  "Je remercie et montre volontiers ma reconnaissance.",
+  "J'attends toujours la dernière minute pour faire un travail et j'ai tendance à remettre à plus tard.",
+  "Je suis impatient(e) avec les personnes qui ne me comprennent pas bien tout de suite.",
+  "Je connais beaucoup de gens et je suis en général mieux renseigné(e) et informé(e) que les autres.",
+  "Les gens ne sont pas égoïstes. Les désaccords viennent la plupart du temps de divergences d'intérêts également légitimes.",
+  "Je suis à l'aise avec tout le monde, même avec des inconnus.",
+  "Mes parents étaient ouverts et rencontraient beaucoup de gens différents. Très jeune, j'ai entendu beaucoup d'opinions variées.",
+  "Quand un collègue de travail me demande des informations, je n'hésite pas à les lui donner, même si nous sommes en compétition.",
+  "J'aime bien expliquer, faire comprendre et faire découvrir.",
+  "Quand on me critique, je réponds aussi sec.",
+  "J'arrive assez bien à prévoir ce qui va arriver quand je commence une action ; j'ai au moins plusieurs scénarios possibles en tête.",
+  "Je suis performant(e) dans mes négociations et j'ai plusieurs fois réglé efficacement des problèmes difficiles de relations entre personnes.",
+  "Je donne facilement un coup de main à mes collaborateurs, même si je n'ai pas trop de temps.",
+  "Il ne faut pas laisser les enfants regarder n'importe quoi à la télévision.",
+  "Je conseille mes enfants car je crains qu'ils ne rencontrent des difficultés.",
+  "Il faut se dévouer pour des causes justes, c'est ce qui donne un sens à la vie.",
+  "J'ai du mal à décider ; je me sens souvent partagé(e) entre des points de vue contraires.",
+  "J'aime les gens discrets et modestes. L'humilité est une qualité essentielle.",
+  "J'aime la compétition et j'arrive en général mieux que les autres à m'en sortir.",
+  "Je sais dire le mot qui détend l'atmosphère et met la bonne ambiance.",
+  "Si on me frustre de quelque chose, je suis furieux(se) et ça s'entend.",
+  "Je suis en général à l'heure à mes rendez-vous et aux réunions et j'évite de faire attendre les gens qui viennent me voir.",
+  "Je me sens libre dans mes choix et mes initiatives.",
+  "J'ai facilement l'impression que j'ai de la chance.",
+  "J'équilibre bien mon temps entre le travail et les loisirs. Les deux m'intéressent.",
+  "Je profite parfois des dîners ou des rencontres de vacances pour faire des affaires ou me documenter pour mon travail.",
+  "Nous ne profitons jamais assez de l'expérience de nos aînés.",
+  "Je suis exigeant(e) pour moi et pour les autres.",
+  "Je supporte mal les gens soumis.",
+  "Je suis facilement anticonformiste.",
+  "Il n'est pas possible de vivre tranquille alors que les 3/4 du monde a faim.",
+  "Dans ma famille, on n'avait pas tellement le droit d'étaler ses émotions, il fallait être réservé et poli.",
+  "J'ai tendance à prendre les choses en main et à maîtriser les situations.",
+  "On devrait être plus sévère pour les excès de vitesse en voiture.",
+  "Je suis fidèle aux gens, quoi qu'il arrive.",
+  "J'ai fortement le sens des responsabilités.",
+  "J'ai plutôt tendance à être trop bon(ne).",
+];
+
+const CATS = [
+  { id:'pnp', label:'PN+ Protecteur',      color:'#C47E1A', bg:'#FDF4E3', group:'Parent', qs:[9,17,28,56,61,65,68,70],      shared:[],    desc:'Pose des règles claires et bienveillantes, structure, protège sans écraser.' },
+  { id:'pnn', label:'PN− Persécuteur',      color:'#A03010', bg:'#F5EAE5', group:'Parent', qs:[8,19,37,44,48,62,67],         shared:[],    desc:'Autoritaire, critique excessif, contrôlant. Dévalorise les autres.' },
+  { id:'ppp', label:'PP+ Permissif',         color:'#5A7A5C', bg:'#D8E8DA', group:'Parent', qs:[20,35,41,43,47,52,69],        shared:[],    desc:'Encourage, soutient, donne la permission d\'exister et de s\'épanouir.' },
+  { id:'ppn', label:'PP− Sauveur',           color:'#7A5A6A', bg:'#EDE0C8', group:'Parent', qs:[6,23,49,50,71],               shared:[],    desc:'Surprotège, fait à la place de l\'autre, entretient la dépendance.' },
+  { id:'ap',  label:'A+ Réaliste',           color:'#D9931F', bg:'#FDF4E3', group:'Adulte', qs:[5,7,13,24,26,38,45,46,56,59], shared:[],   desc:'Observe, analyse les faits du présent, prend des décisions adaptées.' },
+  { id:'an',  label:'A− Hyperrationnel',     color:'#6B6560', bg:'#F5F0E8', group:'Adulte', qs:[25,32,60],                    shared:[],    desc:'Excès de rationalité : déconnexion émotionnelle, froideur perçue.' },
+  { id:'elp', label:'EL+ Spontané',          color:'#C8A96E', bg:'#FDF4E3', group:'Enfant', qs:[11,15,31,40,54,57,58,64],    shared:[64],  desc:'Expressif, créatif, spontané, enthousiaste, libre dans ses choix.' },
+  { id:'eln', label:'EL− Impulsif',          color:'#A03010', bg:'#F5EAE5', group:'Enfant', qs:[1,10,12,34,36,55],           shared:[],    desc:'Impulsif, dépenses excessives, procrastination, colère explosive.' },
+  { id:'eam', label:'EA Modèle',             color:'#5A7A5C', bg:'#D8E8DA', group:'Enfant', qs:[2,14,39,42],                 shared:[],    desc:'Adaptation saine et autonome aux règles sociales, tact, coopération sincère.' },
+  { id:'eas', label:'EA Soumis',             color:'#6B6560', bg:'#F5F0E8', group:'Enfant', qs:[4,16,27,30,51,66],           shared:[],    desc:'Recherche l\'approbation, manque de confiance en soi, répression émotionnelle.' },
+  { id:'ear', label:'EA Rebelle',            color:'#1A5A8A', bg:'#E6F1FB', group:'Enfant', qs:[3,18,21,33,44,63],           shared:[33],  desc:'S\'oppose à l\'autorité, conteste les règles, lutte pour le changement.' },
+  { id:'ec',  label:'EC+ Intuitif/Créateur', color:'#1A5A8A', bg:'#E6F1FB', group:'Enfant', qs:[22,29,33,41,53,64],          shared:[33,64], desc:'Pensée intuitive et originale, lucidité relationnelle, solutions inédites.' },
+];
+
+const GROUPS = {
+  Parent: { color: '#C47E1A', ids: ['pnp','pnn','ppp','ppn'] },
+  Adulte: { color: '#D9931F', ids: ['ap','an'] },
+  Enfant: { color: '#C8A96E', ids: ['elp','eln','eam','eas','ear','ec'] },
+};
+
+// ── CONSTRUCTION DU TABLEAU ────────────────────────────────────────────────────
+let answered = 0;
+const tbody = document.getElementById('q-body');
+
+AFFIRMATIONS.forEach((txt, i) => {
+  const n = i + 1;
+  const tr = document.createElement('tr');
+  tr.id = 'r' + n;
+  tr.innerHTML = `
+    <td class="q-num">${n}</td>
+    <td class="q-txt">${txt}</td>
+    <td class="q-rd"><label class="ro"><input type="radio" name="q${n}" value="vrai" onchange="onAns(${n})"><span>Plutôt<br>Vrai</span></label></td>
+    <td class="q-rd"><label class="ro"><input type="radio" name="q${n}" value="faux" onchange="onAns(${n})"><span>Plutôt<br>Faux</span></label></td>`;
+  tbody.appendChild(tr);
+});
+
+function onAns(n) {
+  const row = document.getElementById('r' + n);
+  if (!row.classList.contains('answered')) { answered++; updateProg(); }
+  row.classList.add('answered');
+}
+function updateProg() {
+  const pct = Math.round((answered / 71) * 100);
+  document.getElementById('prog-label').textContent = answered + ' / 71 réponses';
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = pct + ' %';
+}
+
+// ── CALCUL ─────────────────────────────────────────────────────────────────────
+let lastScores = null;
+
+function calculate() {
+  const missing = [];
+  for (let i = 1; i <= 71; i++) { if (!document.querySelector(`input[name="q${i}"]:checked`)) missing.push(i); }
+  const warn = document.getElementById('warn');
+  if (missing.length) {
+    warn.style.display = 'block';
+    warn.textContent = `⚠ ${missing.length} question(s) sans réponse : n° ${missing.slice(0,10).join(', ')}${missing.length>10?'…':''}. Veuillez toutes les compléter.`;
+    document.getElementById('r' + missing[0]).scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+  warn.style.display = 'none';
+
+  const scores = {};
+  CATS.forEach(cat => {
+    let s = 0;
+    cat.qs.forEach(q => { if (document.querySelector(`input[name="q${q}"]:checked`)?.value === 'vrai') s++; });
+    scores[cat.id] = s;
+  });
+  lastScores = scores;
+  showResults(scores);
+}
+
+let radarChart = null;
+
+function showResults(scores) {
+  const section = document.getElementById('results');
+  section.style.display = 'block';
+  section.scrollIntoView({ behavior:'smooth' });
+
+  const best = CATS.reduce((a,b) => (scores[b.id]/b.qs.length > scores[a.id]/a.qs.length ? b : a));
+  document.getElementById('res-intro').innerHTML =
+    `Votre égogramme est calculé. Le sous-état le plus présent (en proportion) est <strong style="color:${best.color}">${best.label}</strong>. Découvrez ci-dessous le détail par groupe, puis transmettez vos résultats à votre thérapeute en section 6.`;
+
+  // RADAR
+  const labels = CATS.map(c => c.label);
+  const data   = CATS.map(c => Math.round((scores[c.id] / c.qs.length) * 100));
+  const colors = CATS.map(c => c.color);
+  if (radarChart) radarChart.destroy();
+  radarChart = new Chart(document.getElementById('radar'), {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Profil (%)',
+        data,
+        backgroundColor: 'rgba(217,147,31,0.15)',
+        borderColor: '#D9931F',
+        borderWidth: 2,
+        pointBackgroundColor: colors,
+        pointBorderColor: colors,
+        pointRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: { r: {
+        min: 0, max: 100,
+        ticks: { stepSize: 25, font: { size: 10 }, color: '#6B6560', backdropColor: 'transparent' },
+        pointLabels: { font: { size: 10, family: "'Source Sans 3',sans-serif" }, color: '#2C2010' },
+        grid: { color: 'rgba(0,0,0,0.08)' }, angleLines: { color: 'rgba(0,0,0,0.08)' },
+      }}
+    }
+  });
+
+  // CARTES
+  const container = document.getElementById('cards-container');
+  container.innerHTML = '';
+  Object.entries(GROUPS).forEach(([gName, g]) => {
+    const cats   = CATS.filter(c => c.group === gName);
+    const gTotal = cats.reduce((s,c) => s + scores[c.id], 0);
+    const gMax   = cats.reduce((s,c) => s + c.qs.length, 0);
+    const group  = document.createElement('div');
+    group.className = 'etat-group';
+    group.innerHTML = `
+      <div class="etat-group-header" style="background:${g.color}">
+        <span>${gName}</span>
+        <span class="etat-total-badge">Total : ${gTotal} / ${gMax}</span>
+      </div>
+      <div class="sous-etats-grid" id="grid-${gName}"></div>`;
+    container.appendChild(group);
+    const grid = group.querySelector(`#grid-${gName}`);
+    cats.forEach((cat, idx) => {
+      const s = scores[cat.id], max = cat.qs.length, pct = Math.round((s/max)*100);
+      const card = document.createElement('div');
+      card.className = 'sous-card' + (idx%2===1?' alt':'');
+      card.innerHTML = `
+        <div class="sous-label" style="color:${cat.color}">${cat.label}</div>
+        <div class="sous-score-line">
+          <span class="sous-score-num" style="color:${cat.color}">${s}</span>
+          <span class="sous-score-max">/ ${max}</span>
+          <span class="sous-pct">${pct} %</span>
+        </div>
+        <div class="bar-bg"><div class="bar-fill" style="background:${cat.color}" data-pct="${pct}"></div></div>
+        <p class="sous-desc">${cat.desc}</p>
+        ${cat.shared.length ? `<div class="shared-note">⚑ Q.${cat.shared.join(', ')} partagée(s) avec un autre sous-état</div>` : ''}`;
+      grid.appendChild(card);
+    });
+  });
+
+  setTimeout(() => { document.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.pct+'%'; }); }, 300);
+
+  // SYNTHÈSE
+  const sb = document.getElementById('synth-body');
+  sb.innerHTML = '';
+  Object.entries(GROUPS).forEach(([gName, g]) => {
+    const cats  = CATS.filter(c => c.group === gName);
+    const total = cats.reduce((s,c) => s+scores[c.id], 0);
+    const max   = cats.reduce((s,c) => s+c.qs.length, 0);
+    const pct   = Math.round((total/max)*100);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong style="color:${g.color}">${gName}</strong></td>
+      <td style="font-size:.8rem;color:#6B6560">${cats.map(c=>c.label).join(' · ')}</td>
+      <td><strong>${total} / ${max}</strong> <span style="font-size:.8rem;color:#6B6560">(${pct} %)</span></td>`;
+    sb.appendChild(tr);
+  });
+
+  document.getElementById('interp').innerHTML =
+    `📌 <strong>Rappel important :</strong> Ces résultats constituent un point de départ pour votre exploration personnelle. Chaque sous-état a ses aspects positifs. L'objectif thérapeutique est de développer davantage de flexibilité et de conscience dans votre façon d'être en relation.`;
+}
+
+// ── ENVOI EMAIL ────────────────────────────────────────────────────────────────
+function buildEmailBody(prenom, nom, seance, message, scores) {
+  const date = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+
+  let lines = [];
+  lines.push('Bonjour Mélodie,');
+  lines.push('');
+  lines.push(`${prenom} ${nom} vous transmet les résultats de son égogramme AT complété le ${date}.`);
+  if (seance) lines.push(`Prochaine séance : ${seance}`);
+  lines.push('');
+  lines.push('── RÉSULTATS PAR SOUS-ÉTAT ──────────────────────────');
+  lines.push('');
+
+  Object.entries(GROUPS).forEach(([gName]) => {
+    const cats = CATS.filter(c => c.group === gName);
+    const gTotal = cats.reduce((s,c) => s+scores[c.id], 0);
+    const gMax   = cats.reduce((s,c) => s+c.qs.length, 0);
+    lines.push(`▶ ${gName.toUpperCase()} — Total : ${gTotal} / ${gMax}`);
+    cats.forEach(cat => {
+      const s = scores[cat.id], max = cat.qs.length, pct = Math.round((s/max)*100);
+      const bar = '█'.repeat(Math.round(pct/10)) + '░'.repeat(10-Math.round(pct/10));
+      lines.push(`  ${cat.label.padEnd(24)} ${String(s).padStart(2)}/${max}  ${bar}  ${pct} %`);
+    });
+    lines.push('');
+  });
+
+  lines.push('── SYNTHÈSE ────────────────────────────────────────');
+  Object.entries(GROUPS).forEach(([gName, g]) => {
+    const cats  = CATS.filter(c => c.group === gName);
+    const total = cats.reduce((s,c) => s+scores[c.id], 0);
+    const max   = cats.reduce((s,c) => s+c.qs.length, 0);
+    lines.push(`${gName} : ${total} / ${max} (${Math.round((total/max)*100)} %)`);
+  });
+
+  lines.push('');
+  lines.push('── RÉPONSES DÉTAILLÉES ─────────────────────────────');
+  lines.push('');
+  AFFIRMATIONS.forEach((txt, i) => {
+    const n = i + 1;
+    const rep = document.querySelector(`input[name="q${n}"]:checked`)?.value === 'vrai' ? 'VRAI' : 'FAUX';
+    lines.push(`Q${String(n).padStart(2)}. [${rep}] ${txt}`);
+  });
+
+  if (message) {
+    lines.push('');
+    lines.push('── MESSAGE DU PATIENT ──────────────────────────────');
+    lines.push(message);
+  }
+
+  lines.push('');
+  lines.push('──────────────────────────────────────────────────────');
+  lines.push('Document généré via l\'outil égogramme du cabinet · www.melodiepsychotherapie.fr');
+
+  return lines.join('\n');
+}
+
+function sendResults() {
+  const prenom  = document.getElementById('em-prenom').value.trim();
+  const nom     = document.getElementById('em-nom').value.trim();
+  const email   = document.getElementById('em-email').value.trim();
+  const seance  = document.getElementById('em-seance').value.trim();
+  const message = document.getElementById('em-message').value.trim();
+  const swarn   = document.getElementById('send-warn');
+
+  if (!prenom || !nom) {
+    swarn.style.display = 'block';
+    swarn.textContent = '⚠ Veuillez indiquer votre prénom et votre nom avant d\'envoyer.';
+    return;
+  }
+  if (!lastScores) {
+    swarn.style.display = 'block';
+    swarn.textContent = '⚠ Veuillez d\'abord calculer votre égogramme (section 1).';
+    return;
+  }
+  swarn.style.display = 'none';
+
+  const subject = encodeURIComponent(`Égogramme AT — ${prenom} ${nom}`);
+  const body    = encodeURIComponent(buildEmailBody(prenom, nom, seance, message, lastScores));
+  const cc      = email ? `&cc=${encodeURIComponent(email)}` : '';
+
+  const mailto = `mailto:contact@melodiepsychotherapie.fr?subject=${subject}${cc}&body=${body}`;
+
+  // Les corps d'e-mail très longs peuvent dépasser la limite mailto sur certains clients
+  // On tronque proprement si nécessaire (mailto ~2000 chars URL total)
+  const btn = document.getElementById('btn-send');
+  btn.disabled = true;
+  btn.textContent = 'Ouverture de la messagerie…';
+
+  window.location.href = mailto;
+
+  setTimeout(() => {
+    document.getElementById('send-success').style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Renvoyer`;
+    document.getElementById('send-success').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }, 1500);
+}
+</script>
+</body>
+</html>
