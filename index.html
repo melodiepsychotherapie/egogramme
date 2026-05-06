@@ -192,6 +192,35 @@
   }
   .btn-send:hover { background: #6a8f6d; transform: translateY(-1px); }
   .btn-send:disabled { background: var(--gris); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* BOUTON PDF — même style que btn-send mais en orange dominant */
+  .btn-pdf {
+    background: var(--dominant);
+    color: var(--blanc);
+    font-family: 'Lora', serif;
+    font-size: .98rem;
+    font-weight: 700;
+    border: none;
+    padding: 13px 36px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all .25s;
+    box-shadow: 0 4px 14px rgba(196,126,26,.35);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-pdf:hover { background: #9e5e0c; transform: translateY(-1px); }
+  .btn-pdf:disabled { background: var(--gris); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Conteneur des deux boutons (envoi + PDF) */
+  .actions-row {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 0 auto;
+  }
   .send-warn { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: .84rem; color: #856404; margin-top: 12px; display: none; }
   .send-success {
     display: none;
@@ -329,10 +358,16 @@
         <strong>Confidentialité :</strong> Vos résultats seront transmis uniquement à votre thérapeute à l'adresse <strong>contact@melodiepsychotherapie.fr</strong>. Aucune donnée n'est stockée par ce formulaire.
       </div>
 
-      <button class="btn-send" id="btn-send" onclick="sendResults()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        Envoyer à ma thérapeute
-      </button>
+      <div class="actions-row">
+        <button class="btn-send" id="btn-send" onclick="sendResults()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          Envoyer à ma thérapeute
+        </button>
+        <button class="btn-pdf" id="btn-pdf" onclick="downloadPDF()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Télécharger en PDF
+        </button>
+      </div>
       <div class="send-warn" id="send-warn"></div>
       <div class="send-success" id="send-success">
         <strong>✓ Votre messagerie s'est ouverte !</strong>
@@ -359,6 +394,7 @@
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 // ── DONNÉES ────────────────────────────────────────────────────────────────────
 const AFFIRMATIONS = [
@@ -706,6 +742,313 @@ function sendResults() {
     btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Renvoyer`;
     document.getElementById('send-success').scrollIntoView({ behavior:'smooth', block:'nearest' });
   }, 1500);
+}
+
+// ── TÉLÉCHARGEMENT PDF ─────────────────────────────────────────────────────────
+function downloadPDF() {
+  const prenom  = document.getElementById('em-prenom').value.trim();
+  const nom     = document.getElementById('em-nom').value.trim();
+  const seance  = document.getElementById('em-seance').value.trim();
+  const message = document.getElementById('em-message').value.trim();
+  const swarn   = document.getElementById('send-warn');
+
+  // Mêmes contrôles que pour l'envoi e-mail
+  if (!prenom || !nom) {
+    swarn.style.display = 'block';
+    swarn.textContent = '⚠ Veuillez indiquer votre prénom et votre nom avant de télécharger.';
+    return;
+  }
+  if (!lastScores) {
+    swarn.style.display = 'block';
+    swarn.textContent = '⚠ Veuillez d\'abord calculer votre égogramme (section 1).';
+    return;
+  }
+  swarn.style.display = 'none';
+
+  const btn = document.getElementById('btn-pdf');
+  btn.disabled = true;
+  btn.innerHTML = 'Préparation du PDF…';
+
+  // Petite tempo pour laisser le bouton se rafraîchir avant le travail bloquant
+  setTimeout(() => {
+    try {
+      genererPDF(prenom, nom, seance, message, lastScores);
+    } catch (e) {
+      console.error(e);
+      swarn.style.display = 'block';
+      swarn.textContent = '⚠ Une erreur est survenue lors de la génération du PDF.';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Télécharger en PDF`;
+    }
+  }, 50);
+}
+
+function genererPDF(prenom, nom, seance, message, scores) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pageW = 210, pageH = 297, marge = 15;
+  const largeur = pageW - 2 * marge;
+  let y = marge;
+
+  // Couleurs RGB issues de la charte CSS du document
+  const dominant = [196, 126, 26];   // #C47E1A
+  const vivant   = [217, 147, 31];   // #D9931F
+  const sauge    = [143, 168, 138];  // #8FA88A
+  const nuit     = [44, 32, 16];     // #2C2010
+  const gris     = [107, 101, 96];   // #6B6560
+  const creme    = [253, 244, 227];  // #FDF4E3
+  const sable    = [237, 224, 200];  // #EDE0C8
+
+  const dateStr = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+
+  // ── EN-TÊTE
+  doc.setFillColor(...dominant);
+  doc.rect(0, 0, pageW, 32, 'F');
+  doc.setTextColor(253, 244, 227);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text('DOCUMENT PSYCHOÉDUCATIF — DÉVELOPPEMENT PERSONNEL', pageW / 2, 10, { align: 'center' });
+  doc.setFontSize(20);
+  doc.text('Égogramme', pageW / 2, 20, { align: 'center' });
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(9);
+  doc.text('Analyse Transactionnelle — États du Moi et sous-états', pageW / 2, 27, { align: 'center' });
+
+  y = 42;
+
+  // ── BLOC IDENTITÉ
+  doc.setFillColor(...creme);
+  doc.rect(marge, y, largeur, 22, 'F');
+  doc.setDrawColor(...vivant);
+  doc.setLineWidth(1);
+  doc.line(marge, y, marge, y + 22);
+  doc.setTextColor(...nuit);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text(`${prenom} ${nom}`, marge + 4, y + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text(`Date du bilan : ${dateStr}`, marge + 4, y + 13);
+  if (seance) doc.text(`Prochaine séance : ${seance}`, marge + 4, y + 18);
+  y += 28;
+
+  // Helpers
+  const verifPage = (h) => {
+    if (y + h > pageH - 15) { doc.addPage(); y = marge; }
+  };
+  const titreSection = (num, libelle) => {
+    verifPage(12);
+    doc.setFillColor(...dominant);
+    doc.rect(marge, y, 10, 9, 'F');
+    doc.setFillColor(...vivant);
+    doc.rect(marge + 10, y, largeur - 10, 9, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(String(num), marge + 5, y + 6, { align: 'center' });
+    doc.text(libelle, marge + 14, y + 6);
+    y += 13;
+  };
+
+  // ── SECTION : SCORES PAR SOUS-ÉTAT
+  titreSection(1, 'Scores détaillés par sous-état');
+
+  Object.entries(GROUPS).forEach(([gName, g]) => {
+    const cats   = CATS.filter(c => c.group === gName);
+    const gTotal = cats.reduce((s,c) => s + scores[c.id], 0);
+    const gMax   = cats.reduce((s,c) => s + c.qs.length, 0);
+    const gPct   = Math.round((gTotal / gMax) * 100);
+
+    // Bandeau du groupe (Parent / Adulte / Enfant)
+    verifPage(11);
+    const gColor = hexToRgb(g.color);
+    doc.setFillColor(...gColor);
+    doc.rect(marge, y, largeur, 7, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.text(gName, marge + 3, y + 5);
+    doc.text(`Total : ${gTotal} / ${gMax}  (${gPct} %)`, pageW - marge - 3, y + 5, { align: 'right' });
+    y += 9;
+
+    // Détail des sous-états
+    cats.forEach(cat => {
+      const s = scores[cat.id], max = cat.qs.length, pct = Math.round((s/max)*100);
+      verifPage(16);
+
+      doc.setTextColor(...nuit);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(cat.label, marge + 2, y + 4);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(`${s} / ${max}   ${pct} %`, pageW - marge - 2, y + 4, { align: 'right' });
+
+      // Barre de progression
+      const barY = y + 6;
+      const barW = largeur - 4;
+      doc.setFillColor(...sable);
+      doc.rect(marge + 2, barY, barW, 2.5, 'F');
+      const catColor = hexToRgb(cat.color);
+      doc.setFillColor(...catColor);
+      doc.rect(marge + 2, barY, barW * (pct / 100), 2.5, 'F');
+
+      // Description
+      doc.setTextColor(...gris);
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      const descLignes = doc.splitTextToSize(cat.desc, largeur - 4);
+      doc.text(descLignes, marge + 2, barY + 5);
+      y = barY + 5 + descLignes.length * 3 + 2;
+    });
+    y += 2;
+  });
+
+  // ── SECTION : SYNTHÈSE
+  y += 2;
+  titreSection(2, 'Synthèse — Totaux par état principal');
+
+  // En-têtes
+  doc.setFillColor(...dominant);
+  doc.rect(marge, y, largeur, 7, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('État principal', marge + 2, y + 5);
+  doc.text('Sous-états', marge + 38, y + 5);
+  doc.text('Score total', pageW - marge - 2, y + 5, { align: 'right' });
+  y += 8;
+
+  Object.entries(GROUPS).forEach(([gName, g]) => {
+    const cats  = CATS.filter(c => c.group === gName);
+    const total = cats.reduce((s,c) => s+scores[c.id], 0);
+    const max   = cats.reduce((s,c) => s+c.qs.length, 0);
+    const pct   = Math.round((total/max)*100);
+    verifPage(10);
+
+    doc.setFillColor(...creme);
+    doc.rect(marge, y, largeur, 8, 'F');
+    const gColor = hexToRgb(g.color);
+    doc.setTextColor(...gColor);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(gName, marge + 2, y + 5);
+
+    doc.setTextColor(...gris);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    const sousNoms = cats.map(c => c.label).join(' · ');
+    const sousLignes = doc.splitTextToSize(sousNoms, 110);
+    doc.text(sousLignes[0], marge + 38, y + 5);
+
+    doc.setTextColor(...nuit);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(`${total} / ${max} (${pct} %)`, pageW - marge - 2, y + 5, { align: 'right' });
+    y += 9;
+  });
+
+  // ── RAPPEL
+  y += 4;
+  verifPage(20);
+  doc.setFillColor(...sable);
+  doc.rect(marge, y, largeur, 16, 'F');
+  doc.setDrawColor(...dominant);
+  doc.setLineWidth(0.8);
+  doc.line(marge, y, marge, y + 16);
+  doc.setTextColor(...dominant);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.text('Rappel important', marge + 3, y + 5);
+  doc.setTextColor(...nuit);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  const rappel = "Ces résultats constituent un point de départ pour votre exploration personnelle. Chaque sous-état a ses aspects positifs. L'objectif thérapeutique est de développer davantage de flexibilité et de conscience dans votre façon d'être en relation.";
+  const rappelLignes = doc.splitTextToSize(rappel, largeur - 6);
+  doc.text(rappelLignes, marge + 3, y + 9);
+  y += 20;
+
+  // ── MESSAGE LIBRE éventuel
+  if (message) {
+    verifPage(15 + message.length / 5);
+    titreSection(3, 'Message du patient');
+    doc.setFillColor(...creme);
+    const lignesMsg = doc.splitTextToSize(message, largeur - 6);
+    const hMsg = lignesMsg.length * 4 + 6;
+    doc.rect(marge, y, largeur, hMsg, 'F');
+    doc.setTextColor(...nuit);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(lignesMsg, marge + 3, y + 5);
+    y += hMsg + 4;
+  }
+
+  // ── SECTION : RÉPONSES DÉTAILLÉES (sur nouvelle page)
+  doc.addPage();
+  y = marge;
+  titreSection(message ? 4 : 3, 'Réponses détaillées au questionnaire');
+
+  doc.setTextColor(...nuit);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  AFFIRMATIONS.forEach((txt, i) => {
+    const n = i + 1;
+    const rep = document.querySelector(`input[name="q${n}"]:checked`)?.value === 'vrai' ? 'V' : 'F';
+    const couleurRep = rep === 'V' ? sauge : [160, 48, 16];
+    verifPage(8);
+
+    // Numéro
+    doc.setTextColor(...gris);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Q${String(n).padStart(2, '0')}`, marge, y + 3);
+
+    // Réponse (pastille colorée)
+    doc.setFillColor(...couleurRep);
+    doc.circle(marge + 11, y + 2, 1.6, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(6.5);
+    doc.text(rep, marge + 11, y + 2.7, { align: 'center' });
+    doc.setFontSize(8);
+
+    // Texte de l'affirmation
+    doc.setTextColor(...nuit);
+    doc.setFont('helvetica', 'normal');
+    const lignes = doc.splitTextToSize(txt, largeur - 18);
+    doc.text(lignes, marge + 16, y + 3);
+    y += Math.max(5, lignes.length * 3 + 2);
+  });
+
+  // ── PIED DE PAGE sur toutes les pages
+  const nbPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= nbPages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(...sable);
+    doc.setLineWidth(0.3);
+    doc.line(marge, pageH - 12, pageW - marge, pageH - 12);
+    doc.setTextColor(...gris);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7.5);
+    doc.text('Cabinet de Psychothérapie · contact@melodiepsychotherapie.fr · SIRET 948 116 967 00019',
+             pageW / 2, pageH - 7, { align: 'center' });
+    doc.text(`Page ${i} / ${nbPages}`, pageW - marge, pageH - 7, { align: 'right' });
+  }
+
+  // Nom du fichier
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const slug = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '_');
+  doc.save(`Egogramme_${slug(prenom)}_${slug(nom)}_${aujourdhui}.pdf`);
+}
+
+// Petite utilité pour convertir les couleurs hex de la charte en RGB
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return [
+    parseInt(h.substring(0, 2), 16),
+    parseInt(h.substring(2, 4), 16),
+    parseInt(h.substring(4, 6), 16),
+  ];
 }
 </script>
 </body>
